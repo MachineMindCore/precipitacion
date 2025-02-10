@@ -1,42 +1,45 @@
-import psycopg2
-from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
-from dotenv import load_dotenv
 import os
+import psycopg2
+from dotenv import load_dotenv
+from psycopg2 import OperationalError
 
 # Load environment variables from .env file
-load_dotenv("db/.env")
+load_dotenv()
 
-# Get database connection parameters from environment variables
-HOST = os.getenv("DB_HOST")
-PORT = os.getenv("DB_PORT")
-USER = os.getenv("DB_USER")
-PASSWORD = os.getenv("DB_PASSWORD")
-DB_NAME = os.getenv("DB_NAME")
-
-# Function to delete and recreate the database
-def reset_database():
+def drop_database():
     try:
-        # Connect to PostgreSQL (initial connection is to the default "postgres" database)
-        connection = psycopg2.connect(
-            host=HOST,
-            port=PORT,
-            user=USER,
-            password=PASSWORD,
-            dbname=DB_NAME  # Default database
+        # Connect to PostgreSQL server (using default 'postgres' database)
+        conn = psycopg2.connect(
+            host=os.getenv('DB_HOST'),
+            dbname='postgres',  # Connect to maintenance database
+            user=os.getenv('DB_USER'),
+            password=os.getenv('DB_PASSWORD'),
+            port=os.getenv('DB_PORT', 5432)  # Default PostgreSQL port
         )
-        connection.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)  # Allow database-level commands
-        cursor = connection.cursor()
+        conn.autocommit = True  # Required for database operations
+        cur = conn.cursor()
 
-        # Drop the database if it exists
-        cursor.execute(f"DROP DATABASE IF EXISTS \"{DB_NAME}\";")
-        print(f"Database '{DB_NAME}' deleted successfully.")
+        # Get database name to drop from environment variables
+        db_name = os.getenv('DB_NAME')
+        if not db_name:
+            raise ValueError("DB_NAME not set in .env file")
 
-        # Recreate the database
-        cursor.execute(f"CREATE DATABASE \"{DB_NAME}\";")
-        print(f"Database '{DB_NAME}' created successfully.")
+        # Drop database
+        cur.execute(f'DROP DATABASE IF EXISTS "{db_name}"')
+        print(f"Database '{db_name}' dropped successfully")
 
+    except OperationalError as e:
+        print(f"Operational Error: {e}")
+    except ValueError as e:
+        print(f"Configuration Error: {e}")
     except Exception as e:
-        print(f"Error resetting database: {e}")
+        print(f"Unexpected Error: {e}")
+    finally:
+        # Clean up connections
+        if 'cur' in locals() and cur:
+            cur.close()
+        if 'conn' in locals() and conn:
+            conn.close()
 
 if __name__ == "__main__":
-    reset_database()
+    drop_database()
