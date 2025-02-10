@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 import os
 
 # Load environment variables
-load_dotenv()
+load_dotenv(dotenv_path="db/.env")
 DB_HOST = os.getenv('DB_HOST')
 DB_PORT = os.getenv('DB_PORT')
 DB_NAME = os.getenv('DB_NAME')
