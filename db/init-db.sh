@@ -19,7 +19,7 @@ TABLE_EXISTS=$(psql -h localhost -U $DB_USER -d $DB_NAME -tAc "SELECT to_regclas
 
 if [ "$TABLE_EXISTS" != "observaciones" ]; then
   echo "⚡ Applying schema.sql as 'observaciones' table does not exist."
-  psql -h localhost -U $DB_USER -d $DB_NAME -f /schema.sql
+  psql -h localhost -U $DB_USER -d $DB_NAME -f /docker-entrypoint-initdb.d/schema.sql
   echo "✅ Database schema has been initialized successfully."
 else
   echo "✅ Schema already exists. Skipping initialization."
