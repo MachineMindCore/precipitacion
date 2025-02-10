@@ -1,50 +1,42 @@
 import psycopg2
-from psycopg2 import sql
+from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
 from dotenv import load_dotenv
 import os
 
-# Load environment variables
-load_dotenv(dotenv_path="/db/.env")
-DB_HOST = os.getenv('DB_HOST')
-DB_PORT = os.getenv('DB_PORT')
-DB_NAME = os.getenv('DB_NAME')
-DB_USER = os.getenv('DB_USER')
-DB_PASSWORD = os.getenv('DB_PASSWORD')
+# Load environment variables from .env file
+load_dotenv("db/.env")
 
-# Function to delete the database
-def delete_database():
+# Get database connection parameters from environment variables
+HOST = os.getenv("DB_HOST")
+PORT = os.getenv("DB_PORT")
+USER = os.getenv("DB_USER")
+PASSWORD = os.getenv("DB_PASSWORD")
+DB_NAME = os.getenv("DB_NAME")
+
+# Function to delete and recreate the database
+def reset_database():
     try:
-        # Connect to the default 'postgres' database to execute DROP DATABASE
-        conn = psycopg2.connect(
-            host=DB_HOST,
-            port=DB_PORT,
-            dbname='postgres',  # Connect to the default database
-            user=DB_USER,
-            password=DB_PASSWORD
+        # Connect to PostgreSQL (initial connection is to the default "postgres" database)
+        connection = psycopg2.connect(
+            host=HOST,
+            port=PORT,
+            user=USER,
+            password=PASSWORD,
+            dbname=DB_NAME  # Default database
         )
-        conn.autocommit = True
-        cursor = conn.cursor()
+        connection.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)  # Allow database-level commands
+        cursor = connection.cursor()
 
-        # Terminate all active connections to the database
-        cursor.execute(sql.SQL("""
-            SELECT pg_terminate_backend(pg_stat_activity.pid)
-            FROM pg_stat_activity
-            WHERE pg_stat_activity.datname = %s
-              AND pid <> pg_backend_pid();
-        """), [DB_NAME])
+        # Drop the database if it exists
+        cursor.execute(f"DROP DATABASE IF EXISTS \"{DB_NAME}\";")
+        print(f"Database '{DB_NAME}' deleted successfully.")
 
-        # Drop the database
-        cursor.execute(sql.SQL("DROP DATABASE IF EXISTS {};").format(
-            sql.Identifier(DB_NAME)
-        ))
-
-        print(f"✅ Database '{DB_NAME}' has been deleted successfully.")
-
-        cursor.close()
-        conn.close()
+        # Recreate the database
+        cursor.execute(f"CREATE DATABASE \"{DB_NAME}\";")
+        print(f"Database '{DB_NAME}' created successfully.")
 
     except Exception as e:
-        print(f"❌ Error while deleting the database: {e}")
+        print(f"Error resetting database: {e}")
 
 if __name__ == "__main__":
-    delete_database()
+    reset_database()
