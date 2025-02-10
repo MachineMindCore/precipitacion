@@ -8,6 +8,6 @@ for /f "tokens=1-4 delims=/:. " %%a in ("%date% %time%") do (
 :: Git commands
 git add .
 git commit -m "Auto commit - %TIMESTAMP%"
-git push
+git push origin main
 
 echo ✅ All files pushed with commit timestamp '%TIMESTAMP%'
