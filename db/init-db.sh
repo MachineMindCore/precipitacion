@@ -14,7 +14,7 @@ until pg_isready -h localhost -p 5432 -U $DB_USER; do
   sleep 2
 done
 
-# Check if the 'observaciones' table exists
+# Check if the table exists
 TABLE_EXISTS=$(psql -h localhost -U $DB_USER -d $DB_NAME -tAc "SELECT to_regclass('public.observaciones')")
 
 if [ "$TABLE_EXISTS" != "observaciones" ]; then
